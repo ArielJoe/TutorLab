@@ -1,33 +1,15 @@
 "use server";
 
-import prisma from "../../lib/db";
+import prisma from "../../../lib/db";
 
 interface Student {
-  id: number;
+  id: string;
   name: string | null;
   birth_date: Date | null;
   address: string | null;
   email: string | null;
   phone_number: string | null;
-}
-
-export async function addStudent({
-  name,
-  birth_date,
-  address,
-  email,
-  phone_number,
-}: Omit<Student, "id">) {
-  const newStudent = await prisma.student.create({
-    data: {
-      name,
-      birth_date,
-      address,
-      email,
-      phone_number,
-    },
-  });
-  return newStudent;
+  parents_phone_number: string | null;
 }
 
 export async function getStudent(): Promise<Student[]> {
@@ -52,7 +34,7 @@ export async function updateStudent(data: Student) {
   });
 }
 
-export async function deleteStudentById(id: number) {
+export async function deleteStudentById(id: string) {
   await prisma.selectedCourse.deleteMany({
     where: {
       Invoice_Student_id: id,

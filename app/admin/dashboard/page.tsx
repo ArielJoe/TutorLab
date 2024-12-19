@@ -1,13 +1,13 @@
 "use client";
 
 import { User } from "lucide-react";
-import Navbar from "../components/Navbar";
+import Navbar from "../../components/Navbar";
 import { getStudent } from "../actions/student/actions";
 import { useEffect, useState } from "react";
-import Chart from "../components/LineChart";
+import Chart from "../../components/LineChart";
 
 interface Student {
-  id: number;
+  id: string;
   name: string | null;
   birth_date: Date | null;
   address: string | null;

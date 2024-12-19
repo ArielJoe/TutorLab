@@ -1,6 +1,12 @@
 "use client";
 
-import { Gauge, UserRound, GraduationCap, ReceiptText } from "lucide-react";
+import {
+  Gauge,
+  UserRound,
+  GraduationCap,
+  ReceiptText,
+  UserRoundPlus,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -18,22 +24,27 @@ import { cn } from "@/lib/utils";
 const items = [
   {
     title: "Dashboard",
-    url: "/dashboard",
+    url: "/admin/dashboard",
     icon: Gauge,
   },
   {
+    title: "Enrollment",
+    url: "/admin/enrollment",
+    icon: UserRoundPlus,
+  },
+  {
     title: "Student",
-    url: "/student",
+    url: "/admin/student",
     icon: UserRound,
   },
   {
     title: "Teacher",
-    url: "/teacher",
+    url: "/admin/teacher",
     icon: GraduationCap,
   },
   {
     title: "Receipt",
-    url: "/receipt",
+    url: "/admin/receipt",
     icon: ReceiptText,
   },
 ];

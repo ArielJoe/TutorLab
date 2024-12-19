@@ -15,12 +15,12 @@ import {
   getStudentsByName,
   updateStudent,
 } from "../actions/student/actions";
-import Navbar from "../components/Navbar";
+import Navbar from "../../components/Navbar";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { EllipsisVertical, Search } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Trash2, Pencil, CalendarIcon } from "lucide-react";
+import { Trash2, Pencil } from "lucide-react";
 import {
   Sheet,
   SheetClose,
@@ -39,33 +39,36 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Student {
-  id: number;
+  id: string;
   name: string | null;
   birth_date: Date | null;
   address: string | null;
   email: string | null;
   phone_number: string | null;
+  parents_phone_number: string | null;
 }
 
-export default function Student() {
+export default function StudentPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [studentName, setStudentName] = useState("");
   const [refresh, setRefresh] = useState(false);
   const [editableStudent, setEditableStudent] = useState<Student | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [notFound, setNotFound] = useState(false);
+  const pageSize = 10;
 
   useEffect(() => {
     const fetchStudents = async () => {
-      const studentData = await getStudent();
-      setStudents(studentData);
+      fetchAllStudents();
     };
 
     fetchStudents();
@@ -73,7 +76,11 @@ export default function Student() {
 
   async function fetchAllStudents() {
     const students = await getStudent();
-    return students;
+    if (students) {
+      setStudents(students);
+    } else {
+      setNotFound(true);
+    }
   }
 
   async function fetchStudents() {
@@ -100,7 +107,7 @@ export default function Student() {
     }
   }
 
-  async function handleDelete(name: string, id: number) {
+  async function handleDelete(name: string, id: string) {
     await deleteStudentById(id);
     setRefresh((prev) => !prev);
     toast({
@@ -120,18 +127,29 @@ export default function Student() {
     }
   }
 
+  async function handleSchedule() {}
+
+  const totalPages = Math.ceil(students.length / pageSize);
+  const displayedStudents = students.slice(
+    currentPage * pageSize,
+    (currentPage + 1) * pageSize
+  );
+
+  if (notFound) {
+    return <div className="text-center">Data Not Found</div>;
+  }
+
   return (
     <div className="w-[100%]">
-      <Navbar title="Students List" />
+      <Navbar title="Student" />
       <div className="flex items-center gap-2 p-5">
         <Search onClick={fetchStudents} className="cursor-pointer" />
         <Input
           placeholder="John Doe"
-          onChange={async (e) => {
+          onChange={(e) => {
             setStudentName(e.target.value);
             if (e.target.value === "") {
-              const students = await fetchAllStudents();
-              setStudents(students);
+              fetchAllStudents();
             }
           }}
           onKeyDown={(e) => {
@@ -152,20 +170,24 @@ export default function Student() {
                 <TableHead>Address</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone Number</TableHead>
+                <TableHead>Parents Phone Number</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {students.map((student) => (
+              {displayedStudents.map((student) => (
                 <TableRow key={student.id}>
                   <TableCell className="p-5">{student.id}</TableCell>
                   <TableCell>{student.name}</TableCell>
                   <TableCell>
-                    {student.birth_date!.toISOString().split("T")[0]}
+                    {student.birth_date
+                      ? student.birth_date.toISOString().split("T")[0]
+                      : "N/A"}
                   </TableCell>
                   <TableCell>{student.address}</TableCell>
                   <TableCell>{student.email}</TableCell>
                   <TableCell>{student.phone_number}</TableCell>
+                  <TableCell>{student.parents_phone_number}</TableCell>
                   <TableCell>
                     <div className="flex gap-3">
                       <Sheet>
@@ -218,7 +240,6 @@ export default function Student() {
                                 }}
                               />
                             </div>
-
                             <div className="grid grid-cols-4 items-center gap-4">
                               <Label className="text-right">Address</Label>
                               <Input
@@ -290,15 +311,54 @@ export default function Student() {
                           </Button>
                         </DialogContent>
                       </Dialog>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger>
+                          <EllipsisVertical />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => {
+                              handleSchedule;
+                            }}
+                          >
+                            Schedule
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="cursor-pointer">
+                            Billing
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          <div className="flex items-center justify-between py-4">
+            <Button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
+              disabled={currentPage === 0}
+              className="flex justify-center items-center h-10 w-10"
+            >
+              <ChevronLeft />
+            </Button>
+            <span>
+              Page {currentPage + 1} of {totalPages}
+            </span>
+            <Button
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))
+              }
+              disabled={currentPage >= totalPages - 1}
+              className="flex justify-center items-center h-10 w-10"
+            >
+              <ChevronRight />
+            </Button>
+          </div>
         </div>
       ) : (
-        <div className="p-5 text-center">Data Not Found</div>
+        <div className="p-5 text-center">Loading Students Data...</div>
       )}
     </div>
   );

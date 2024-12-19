@@ -13,32 +13,56 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[]
+}
+
+model User {
+  id       Int       @id @default(autoincrement())
+  email    String    @unique
+  password String
+  roleId   Int
+  role     Role      @relation(fields: [roleId], references: [id])
+  sessions Session[]
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id])
+}
+
 model Student {
-  id                 Int                 @id @default(autoincrement())
-  name               String?             @db.VarChar(100)
-  birth_date         DateTime?
-  address            String?             @db.VarChar(150)
-  email              String?             @db.VarChar(50)
-  phone_number       String?             @db.VarChar(20)
-  studyContracts     StudyContract[]
-  invoices           Invoice[]
-  studentAttendances StudentAttendance[]
+  id                   String           @id
+  name                 String?
+  birth_date           DateTime?
+  address              String?
+  email                String?
+  phone_number         String?
+  parents_phone_number String?
+  studyContracts       StudyContract[]
+  invoices             Invoice[]
+  selectedCourses      SelectedCourse[]
 }
 
 model Teacher {
-  id                 Int                 @id @default(autoincrement())
-  name               String?             @db.VarChar(100)
-  birth_date         DateTime?
-  address            String?             @db.VarChar(150)
-  phone_number       String?             @db.VarChar(20)
-  schedules          Schedule[]
-  teacherAttendances TeacherAttendance[]
+  id           String              @id
+  name         String?
+  address      String?
+  email        String?
+  phone_number String?
+  schedules    Schedule[]
+  attendances  TeacherAttendance[]
 }
 
 model Course {
   id              Int              @id @default(autoincrement())
-  course_name     String?          @db.VarChar(50)
-  description     String?          @db.VarChar(150)
+  course_name     String?
+  description     String?
   duration        Int?
   price           Float?
   schedules       Schedule[]
@@ -46,8 +70,8 @@ model Course {
 }
 
 model Period {
-  id         Int        @id @default(autoincrement())
-  name       String?    @db.VarChar(50)
+  id         Int        @id
+  name       String?
   start_date DateTime?
   end_date   DateTime?
   schedules  Schedule[]
@@ -55,33 +79,34 @@ model Period {
 
 model Schedule {
   id                 Int                 @id @default(autoincrement())
-  day                Int?
+  day                DayEnum?
   start_time         DateTime?
   duration           Int?
   period             Period              @relation(fields: [Period_id], references: [id])
   Period_id          Int
   teacher            Teacher             @relation(fields: [Teacher_id], references: [id])
-  Teacher_id         Int
+  Teacher_id         String
   course             Course              @relation(fields: [Course_id], references: [id])
   Course_id          Int
   studyContracts     StudyContract[]
-  teacherAttendances TeacherAttendance[]
+  studentAttendances StudentAttendance[]
+  TeacherAttendance  TeacherAttendance[]
 
   @@unique([id, Period_id, Teacher_id, Course_id])
 }
 
 model StudyContract {
   id                  Int                 @id @default(autoincrement())
+  schedule            Schedule            @relation(fields: [Schedule_id, Schedule_Period_id, Schedule_Teacher_id, Schedule_Course_id], references: [id, Period_id, Teacher_id, Course_id])
   Schedule_id         Int
   Schedule_Period_id  Int
-  Schedule_Teacher_id Int
+  Schedule_Teacher_id String
   Schedule_Course_id  Int
-  Student_id          Int
   student             Student             @relation(fields: [Student_id], references: [id])
-  schedule            Schedule            @relation(fields: [Schedule_id, Schedule_Period_id, Schedule_Teacher_id, Schedule_Course_id], references: [id, Period_id, Teacher_id, Course_id])
+  Student_id          String
   studentAttendances  StudentAttendance[]
 
-  @@unique([Schedule_id, Schedule_Period_id, Schedule_Teacher_id, Schedule_Course_id, Student_id])
+  @@unique([id, Schedule_Period_id, Schedule_Teacher_id, Schedule_Course_id, Student_id])
 }
 
 model StudentAttendance {
@@ -90,14 +115,14 @@ model StudentAttendance {
   present                           Boolean?
   sick                              Boolean?
   alpha                             Boolean?
+  studyContract                     StudyContract @relation(fields: [StudyContract_Schedule_id, StudyContract_Schedule_Period_id, StudyContract_Schedule_Teacher_id, StudyContract_Schedule_Course_id, StudyContract_Student_id], references: [id, Schedule_Period_id, Schedule_Teacher_id, Schedule_Course_id, Student_id])
   StudyContract_Schedule_id         Int
   StudyContract_Schedule_Period_id  Int
-  StudyContract_Schedule_Teacher_id Int
+  StudyContract_Schedule_Teacher_id String
   StudyContract_Schedule_Course_id  Int
-  StudyContract_Student_id          Int
-  studyContract                     StudyContract @relation(fields: [StudyContract_Schedule_id, StudyContract_Schedule_Period_id, StudyContract_Schedule_Teacher_id, StudyContract_Schedule_Course_id, StudyContract_Student_id], references: [Schedule_id, Schedule_Period_id, Schedule_Teacher_id, Schedule_Course_id, Student_id])
-  Student                           Student?      @relation(fields: [studentId], references: [id])
-  studentId                         Int?
+  StudyContract_Student_id          String
+  Schedule                          Schedule?     @relation(fields: [scheduleId], references: [id])
+  scheduleId                        Int?
 }
 
 model TeacherAttendance {
@@ -106,13 +131,13 @@ model TeacherAttendance {
   sick                Boolean?
   alpha               Boolean?
   excused             Boolean?
+  schedule            Schedule @relation(fields: [Schedule_id, Schedule_Period_id, Schedule_Teacher_id, Schedule_Course_id], references: [id, Period_id, Teacher_id, Course_id])
   Schedule_id         Int
   Schedule_Period_id  Int
-  Schedule_Teacher_id Int
+  Schedule_Teacher_id String
   Schedule_Course_id  Int
-  schedule            Schedule @relation(fields: [Schedule_id, Schedule_Period_id, Schedule_Teacher_id, Schedule_Course_id], references: [id, Period_id, Teacher_id, Course_id])
   Teacher             Teacher? @relation(fields: [teacherId], references: [id])
-  teacherId           Int?
+  teacherId           String?
 }
 
 model Invoice {
@@ -121,24 +146,43 @@ model Invoice {
   due_date        DateTime?
   status          InvoiceStatus?
   amount          Float?
+  metode          PaymentMethod?
   student         Student          @relation(fields: [Student_id], references: [id])
-  Student_id      Int
+  Student_id      String
   selectedCourses SelectedCourse[]
 
   @@unique([id, Student_id])
 }
 
 model SelectedCourse {
-  id                 Int     @id @default(autoincrement())
+  id                 Int      @id @default(autoincrement())
+  course             Course   @relation(fields: [Course_id], references: [id])
   Course_id          Int
+  invoice            Invoice  @relation(fields: [Invoice_id, Invoice_Student_id], references: [id, Student_id])
   Invoice_id         Int
-  Invoice_Student_id Int
-  course             Course  @relation(fields: [Course_id], references: [id])
-  invoice            Invoice @relation(fields: [Invoice_id, Invoice_Student_id], references: [id, Student_id])
+  Invoice_Student_id String
+  Student            Student? @relation(fields: [studentId], references: [id])
+  studentId          String?
 }
 
-// Enum for Invoice Status
+// Enum for days of the week
+enum DayEnum {
+  Monday
+  Tuesday
+  Wednesday
+  Thursday
+  Friday
+  Saturday
+}
+
+// Enum for invoice status
 enum InvoiceStatus {
-  lunas
-  belum_lunas
+  Lunas
+  Belum_Lunas
+}
+
+// Enum for payment methods
+enum PaymentMethod {
+  Tunai
+  Transfer
 }
